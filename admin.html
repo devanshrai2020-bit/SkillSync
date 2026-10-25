@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h3>Placement Officer</h3>
+
+  <button onclick="openPanel('new')">New Applications</button>
+  <button onclick="openPanel('old')">Processed Applications</button>
+
+  <hr>
+
+  <button onclick="loadStudents()">Students</button>
+  <button onclick="loadJobs()">Jobs</button>
+  <button onclick="loadStats()">Stats</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <h2>Admin Dashboard</h2>
+
+  <!-- APPLICATIONS -->
+  <div id="appsPanel">
+    <ul id="apps"></ul>
+  </div>
+
+  <!-- EXTRA -->
+  <div id="extraPanel"></div>
+
+</div>
+
+<script>
+let allApps = [];
+let currentView = "new";
+
+/* SWITCH PANEL */
+function openPanel(type){
+  currentView = type;
+  document.getElementById("extraPanel").innerHTML = "";
+  render();
+}
+
+/* LOAD APPLICATIONS */
+function loadApps(){
+  fetch("http://localhost:3000/admin/applications")
+  .then(res=>res.json())
+  .then(data=>{
+    allApps = data;
+    render();
+  });
+}
+
+/* RENDER APPLICATIONS */
+function render(){
+  const list = document.getElementById("apps");
+  list.innerHTML = "";
+
+  let filtered = [];
+
+  if(currentView === "new"){
+    filtered = allApps.filter(a => a.STATUS === "PENDING");
+  } else {
+    filtered = allApps.filter(a => a.STATUS !== "PENDING");
+  }
+
+  if(filtered.length === 0){
+    list.innerHTML = "<p>No applications</p>";
+    return;
+  }
+
+  filtered.forEach(app=>{
+    list.innerHTML += `
+      <li class="card">
+        <div>
+          <strong>${app.FULL_NAME || app.USERNAME}</strong>
+          <p>${app.COMPANY_NAME} - ${app.ROLE}</p>
+
+          <p><b>CGPA:</b> ${app.CGPA}</p>
+          <p><b>Student Skills:</b> ${app.STUDENT_SKILLS}</p>
+          <p><b>Job Skills:</b> ${app.JOB_SKILLS}</p>
+
+          <p><b>Match:</b> ${app.MATCH}%</p>
+          <p><b>Matched Skills:</b> ${app.MATCHED_SKILLS}</p>
+
+          <p style="color:${app.ELIGIBLE ? 'lightgreen' : 'red'}">
+            ${app.ELIGIBLE ? 'Eligible' : 'Not Eligible'}
+          </p>
+
+          <span class="status ${app.STATUS.toLowerCase()}">${app.STATUS}</span>
+        </div>
+
+        <div>
+          ${app.STATUS === "PENDING" ? `
+            <button onclick="updateStatus(${app.APPLICATION_ID}, 'APPROVED')">✔</button>
+            <button onclick="updateStatus(${app.APPLICATION_ID}, 'REJECTED')">✖</button>
+          ` : ""}
+
+          <button onclick="deleteApp(${app.APPLICATION_ID})">🗑</button>
+        </div>
+      </li>
+    `;
+  });
+}
+
+/* UPDATE STATUS */
+function updateStatus(id, status){
+  fetch("http://localhost:3000/admin/update",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({application_id:id, status})
+  }).then(()=>loadApps());
+}
+
+/* DELETE APPLICATION */
+function deleteApp(id){
+  fetch(`http://localhost:3000/admin/application/${id}`,{
+    method:"DELETE"
+  }).then(()=>loadApps());
+}
+
+/* LOAD STUDENTS */
+function loadStudents(){
+  fetch("http://localhost:3000/admin/students")
+  .then(res=>res.json())
+  .then(data=>{
+    const div = document.getElementById("extraPanel");
+    div.innerHTML = "<h3>Students</h3>";
+
+    data.forEach(u=>{
+      div.innerHTML += `
+        <div class="card">
+          <strong>${u.FULL_NAME || u.USERNAME}</strong>
+          <p>CGPA: ${u.CGPA}</p>
+          <p>Branch: ${u.BRANCH}</p>
+          <p>Skills: ${u.SKILLS}</p>
+          <p>Phone: ${u.PHONE}</p>
+        </div>
+      `;
+    });
+  });
+}
+
+/* LOAD JOBS */
+function loadJobs(){
+  fetch("http://localhost:3000/admin/jobs")
+  .then(res=>res.json())
+  .then(data=>{
+    const div = document.getElementById("extraPanel");
+    div.innerHTML = "<h3>Jobs</h3>";
+
+    data.forEach(j=>{
+      div.innerHTML += `
+        <div class="card">
+          <strong>${j.COMPANY_NAME}</strong>
+          <p>${j.ROLE}</p>
+          <p>CGPA: ${j.CGPA}</p>
+          <p>Skills: ${j.SKILLS}</p>
+        </div>
+      `;
+    });
+  });
+}
+
+/* LOAD STATS */
+function loadStats(){
+  fetch("http://localhost:3000/admin/applications")
+  .then(res=>res.json())
+  .then(data=>{
+    let approved=0, rejected=0, pending=0;
+
+    data.forEach(a=>{
+      if(a.STATUS==="APPROVED") approved++;
+      else if(a.STATUS==="REJECTED") rejected++;
+      else pending++;
+    });
+
+    const div = document.getElementById("extraPanel");
+    div.innerHTML = `
+      <div class="card">Approved: ${approved}</div>
+      <div class="card">Rejected: ${rejected}</div>
+      <div class="card">Pending: ${pending}</div>
+    `;
+  });
+}
+
+/* INIT */
+loadApps();
+</script>
+
+</body>
+</html>

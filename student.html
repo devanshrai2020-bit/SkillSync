@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>Student Panel</h3>
+  <button onclick="showSection('jobs')">New Jobs</button>
+  <button onclick="showSection('apps')">Applied</button>
+  <button onclick="showSection('profile')">Profile</button>
+</div>
+
+<div class="main">
+
+<h2>Student Dashboard</h2>
+
+<div id="jobsSection"></div>
+<div id="appsSection" style="display:none;"></div>
+
+<!-- PROFILE -->
+<div id="profileSection" style="display:none;">
+
+<h3>Basic Information</h3>
+<input id="full_name" placeholder="Full Name">
+<input id="phone" placeholder="Mobile Number">
+<input id="email" placeholder="Email">
+<input id="linkedin" placeholder="LinkedIn URL">
+<input id="github" placeholder="GitHub URL">
+
+<h3>Academic</h3>
+<input id="degree" placeholder="Degree">
+<input id="branch" placeholder="Branch">
+<input id="year" placeholder="Graduation Year">
+<input id="cgpa" placeholder="CGPA">
+<input id="tenth" placeholder="10th %">
+<input id="twelfth" placeholder="12th %">
+<input id="backlog" placeholder="Backlogs">
+
+<h3>Skills</h3>
+<input id="skills" placeholder="Skills (comma separated)">
+<input id="softskills" placeholder="Soft Skills">
+
+<h3>Experience</h3>
+<input id="internships" placeholder="Internships">
+<input id="projects" placeholder="Projects">
+<input id="certifications" placeholder="Certifications">
+
+<h3>Preferences</h3>
+<input id="location" placeholder="Preferred Location">
+<select id="relocate">
+  <option value="yes">Willing to Relocate</option>
+  <option value="no">Not Willing</option>
+</select>
+
+<h3>Extra</h3>
+<input id="achievements" placeholder="Achievements">
+<input id="hobbies" placeholder="Hobbies">
+
+<button onclick="save()">Save Profile</button>
+
+</div>
+
+</div>
+
+<script>
+const user = localStorage.getItem("user");
+
+const jobsSection = document.getElementById("jobsSection");
+const appsSection = document.getElementById("appsSection");
+const profileSection = document.getElementById("profileSection");
+
+/* SWITCH SECTIONS */
+function showSection(section){
+  jobsSection.style.display = "none";
+  appsSection.style.display = "none";
+  profileSection.style.display = "none";
+
+  if(section === "jobs"){
+    jobsSection.style.display = "block";
+    loadJobs();
+  }
+  if(section === "apps"){
+    appsSection.style.display = "block";
+    loadApps();
+  }
+  if(section === "profile"){
+    profileSection.style.display = "block";
+    loadProfile();
+  }
+}
+
+/* LOAD PROFILE */
+function loadProfile(){
+  fetch(`http://localhost:3000/student/profile/${user}`)
+  .then(res=>res.json())
+  .then(d=>{
+    if(!d) return;
+
+    full_name.value = d.FULL_NAME || "";
+    phone.value = d.PHONE || "";
+    email.value = d.EMAIL || "";
+    linkedin.value = d.LINKEDIN || "";
+    github.value = d.GITHUB || "";
+
+    degree.value = d.DEGREE || "";
+    branch.value = d.BRANCH || "";
+    year.value = d.YEAR || "";
+    cgpa.value = d.CGPA || "";
+    tenth.value = d.TENTH || "";
+    twelfth.value = d.TWELFTH || "";
+    backlog.value = d.BACKLOG || "";
+
+    skills.value = d.SKILLS || "";
+    softskills.value = d.SOFTSKILLS || "";
+
+    internships.value = d.INTERNSHIPS || "";
+    projects.value = d.PROJECTS || "";
+    certifications.value = d.CERTIFICATIONS || "";
+
+    location.value = d.LOCATION_PREF || "";
+    relocate.value = d.RELOCATE || "yes";
+
+    achievements.value = d.ACHIEVEMENTS || "";
+    hobbies.value = d.HOBBIES || "";
+  });
+}
+
+/* SAVE PROFILE */
+function save(){
+  fetch("http://localhost:3000/student/profile",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      username:user,
+
+      full_name:full_name.value,
+      phone:phone.value,
+      email:email.value,
+      linkedin:linkedin.value,
+      github:github.value,
+
+      degree:degree.value,
+      branch:branch.value,
+      year:year.value,
+      cgpa:cgpa.value,
+      tenth:tenth.value,
+      twelfth:twelfth.value,
+      backlog:backlog.value,
+
+      skills:skills.value,
+      softskills:softskills.value,
+      internships:internships.value,
+      projects:projects.value,
+      certifications:certifications.value,
+
+      location_pref:location.value,
+      relocate:relocate.value,
+
+      achievements:achievements.value,
+      hobbies:hobbies.value
+    })
+  })
+  .then(res=>res.json())
+  .then(()=>{
+    alert("Profile Saved");
+  })
+  .catch(err=>{
+    console.error(err);
+    alert("Error saving profile");
+  });
+}
+
+/* LOAD JOBS */
+function loadJobs(){
+  jobsSection.innerHTML = "Loading...";
+
+  fetch(`http://localhost:3000/student/jobs/${user}`)
+  .then(res=>res.json())
+  .then(data=>{
+    jobsSection.innerHTML = "";
+
+    if(!data || data.length === 0){
+      jobsSection.innerHTML = "<p>No jobs available</p>";
+      return;
+    }
+
+    data.forEach(j=>{
+      jobsSection.innerHTML += `
+        <div class="card">
+          <div>
+            <strong>${j.COMPANY_NAME}</strong>
+            <p><b>Role:</b> ${j.ROLE}</p>
+            <p><b>Skills:</b> ${j.SKILLS}</p>
+            <p><b>CGPA:</b> ${j.CGPA}</p>
+            <p><b>Backlogs:</b> ${j.BACKLOGS}</p>
+
+            <p><b>Match:</b> ${j.MATCH}%</p>
+            <p><b>Matched Skills:</b> ${j.MATCHED}</p>
+
+            <p style="color:${j.ELIGIBLE ? 'lightgreen' : 'red'}">
+              ${j.ELIGIBLE ? 'Eligible' : 'Not Eligible'}
+            </p>
+          </div>
+
+          ${
+            j.ELIGIBLE
+              ? `<button onclick="apply(${j.JOB_ID}, this)">Apply</button>`
+              : `<button disabled>Not Eligible</button>`
+          }
+        </div>
+      `;
+    });
+  });
+}
+
+/* APPLY */
+function apply(id, btn){
+  fetch("http://localhost:3000/student/apply",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      job_id:id,
+      student_username:user
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.success){
+      btn.innerText = "Applied";
+    } else {
+      alert(data.message || "Already applied");
+    }
+    loadJobs();
+  });
+}
+
+/* LOAD APPLICATIONS */
+function loadApps(){
+  appsSection.innerHTML = "";
+
+  fetch(`http://localhost:3000/student/applications/${user}`)
+  .then(res=>res.json())
+  .then(data=>{
+    if(!data.length){
+      appsSection.innerHTML = "<p>No applications</p>";
+      return;
+    }
+
+    data.forEach(a=>{
+      appsSection.innerHTML += `
+        <div class="card">
+          ${a.COMPANY_NAME} - ${a.ROLE} (${a.STATUS})
+        </div>
+      `;
+    });
+  });
+}
+
+showSection("jobs");
+</script>
+
+</body>
+</html>

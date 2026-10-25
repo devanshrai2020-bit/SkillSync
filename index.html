@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Skill Sync | Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-card">
+    
+    <h1>Skill Sync</h1>
+    <p class="subtitle">Internal Campus Placement Portal</p>
+
+    <select id="role">
+      <option value="student">Student</option>
+      <option value="company">Company</option>
+      <option value="admin">Placement Officer</option>
+    </select>
+
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+
+    <p id="msg" class="error"></p>
+
+  </div>
+</div>
+
+<script src="login.js"></script>
+</body>
+</html>

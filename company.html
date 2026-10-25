@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Company Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>Company Panel</h3>
+  <button onclick="showSection('post')">Post Job</button>
+  <button onclick="showSection('view')">View Jobs</button>
+</div>
+
+<div class="main">
+
+<h2>Company Dashboard</h2>
+
+<!-- POST / EDIT SECTION -->
+<div id="postSection">
+  <div class="job-form">
+
+    <input id="company" placeholder="Company Name">
+    <input id="role" placeholder="Role">
+    <input id="cgpa" placeholder="Minimum CGPA">
+    <input id="branch" placeholder="Branch">
+    <input id="year" placeholder="Year">
+    <input id="backlogs" placeholder="Backlogs Allowed">
+    <input id="stipend" placeholder="Stipend">
+    <input id="skills" placeholder="Skills (comma separated)">
+    <input id="experience" placeholder="Experience">
+    <textarea id="description" placeholder="Description"></textarea>
+
+    <button id="submitBtn" onclick="handleSubmit()">Post Job</button>
+    <p id="msg"></p>
+
+  </div>
+</div>
+
+<!-- VIEW JOBS -->
+<div id="viewSection" style="display:none;">
+  <div id="jobs"></div>
+</div>
+
+</div>
+
+<script>
+let editingJobId = null;
+
+/* SWITCH SECTION */
+function showSection(type){
+  document.getElementById("postSection").style.display = type==="post" ? "block" : "none";
+  document.getElementById("viewSection").style.display = type==="view" ? "block" : "none";
+
+  if(type==="view") loadJobs();
+}
+
+/* HANDLE SUBMIT */
+function handleSubmit(){
+  if(editingJobId){
+    updateJob();
+  } else {
+    postJob();
+  }
+}
+
+/* POST JOB */
+function postJob(){
+  fetch("http://localhost:3000/company/job",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      company_name:company.value,
+      role:role.value,
+      cgpa:cgpa.value,
+      branch:branch.value,
+      year:year.value,
+      backlogs:backlogs.value,
+      stipend:stipend.value,
+      description:description.value,
+      skills:skills.value,
+      experience:experience.value
+    })
+  }).then(()=>{
+    msg.innerText = "Job Posted";
+
+    clearForm();
+  });
+}
+
+/* LOAD JOBS */
+function loadJobs(){
+  fetch("http://localhost:3000/admin/jobs")
+  .then(res=>res.json())
+  .then(data=>{
+    jobs.innerHTML = "";
+
+    if(data.length === 0){
+      jobs.innerHTML = "<p>No jobs posted</p>";
+      return;
+    }
+
+    data.forEach(j=>{
+      jobs.innerHTML += `
+  <div class="card">
+    <div>
+      <strong>${j.COMPANY_NAME}</strong>
+      <p>${j.ROLE}</p>
+      <p>Skills: ${j.SKILLS}</p>
+      <p>Experience: ${j.EXPERIENCE}</p>
+    </div>
+
+    <div>
+      <button onclick="editJob(${j.JOB_ID})">Edit</button>
+      <button onclick="deleteJob(${j.JOB_ID})">Delete</button>
+    </div>
+  </div>
+`;
+    });
+  });
+}
+
+/* EDIT JOB */
+function editJob(id){
+  fetch(`http://localhost:3000/company/job/${id}`)
+  .then(res=>res.json())
+  .then(job=>{
+    editingJobId = id;
+
+    company.value = job.COMPANY_NAME;
+    role.value = job.ROLE;
+    cgpa.value = job.CGPA;
+    branch.value = job.BRANCH;
+    year.value = job.YEAR;
+    backlogs.value = job.BACKLOGS;
+    stipend.value = job.STIPEND;
+    description.value = job.DESCRIPTION;
+    skills.value = job.SKILLS;
+    experience.value = job.EXPERIENCE;
+
+    document.getElementById("submitBtn").innerText = "Update Job";
+
+    showSection("post");
+  });
+}
+
+/* UPDATE JOB */
+function updateJob(){
+  fetch(`http://localhost:3000/company/job/${editingJobId}`,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      role:role.value,
+      skills:skills.value,
+      experience:experience.value,
+      cgpa:cgpa.value
+    })
+  }).then(()=>{
+    alert("Job Updated");
+
+    editingJobId = null;
+    document.getElementById("submitBtn").innerText = "Post Job";
+
+    clearForm();
+    showSection("view");
+  });
+}
+
+/* DELETE JOB */
+
+function deleteJob(id){
+  fetch(`http://localhost:3000/company/job/${id}`,{
+    method:"DELETE"
+  })
+  .then(res=>res.json())
+  .then(()=>{
+    loadJobs();
+  });
+}
+
+/* CLEAR FORM */
+function clearForm(){
+  company.value="";
+  role.value="";
+  cgpa.value="";
+  branch.value="";
+  year.value="";
+  backlogs.value="";
+  stipend.value="";
+  description.value="";
+  skills.value="";
+  experience.value="";
+}
+</script>
+
+</body>
+</html>
